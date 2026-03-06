@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Global Variables Dashboard | Webex Contact Centre</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: #f7f7f7;
+      color: #333;
+    }
+    .dashboard-page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .dashboard-page h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #333;
+      margin: 0 0 24px 0;
+    }
+    supervisor-dashboard {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-page">
+    <h1>Global Variables Dashboard</h1>
+    <!-- Configure via attributes when embedding in WxCC Desktop -->
+    <supervisor-dashboard
+      org-id="YOUR_ORG_ID"
+      user="YOUR_USER_PREFIX"
+      access-token="YOUR_ACCESS_TOKEN">
+    </supervisor-dashboard>
+  </div>
+
+  <script src="supervisor-dashboard.js"></script>
+</body>
+</html>
