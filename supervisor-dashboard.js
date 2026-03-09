@@ -119,6 +119,13 @@ style.textContent = `
   margin: 0;
   line-height: 1.4;
 }
+.var-card__subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  color: ${MD.gray50};
+  margin: 2px 0 0 0;
+  line-height: 1.4;
+}
 
 /* Status badge */
 .status-badge {
@@ -461,7 +468,8 @@ class SupervisorDashboard extends HTMLElement {
       if (v.variableType === "Boolean" && v.active) {
         booleandata.push({
           index: i,
-          name: state.description[i],
+          variableName: state.gvname[i],
+          description: state.description[i],
           value: v.defaultValue,
           checkName: state.checkboxname[i],
           submitName: state.submitname[i],
@@ -473,7 +481,8 @@ class SupervisorDashboard extends HTMLElement {
         state.savedtext[i] = truncated;
         stringdata.push({
           index: i,
-          name: state.description[i],
+          variableName: state.gvname[i],
+          description: state.description[i],
           value: truncated,
           textAreaName: state.textareaname[i],
           submitName: state.submitname[i],
@@ -519,16 +528,18 @@ class SupervisorDashboard extends HTMLElement {
     let anyBoolVisible = false;
     let anyStrVisible = false;
     boolCards.forEach((card) => {
-      const title = card.querySelector(".var-card__title");
-      const name = (title?.textContent ?? "").toLowerCase();
-      const show = !search || name.includes(search);
+      const title = card.querySelector(".var-card__title")?.textContent ?? "";
+      const subtitle = card.querySelector(".var-card__subtitle")?.textContent ?? "";
+      const searchable = (title + " " + subtitle).toLowerCase();
+      const show = !search || searchable.includes(search);
       card.style.display = show ? "" : "none";
       if (show) anyBoolVisible = true;
     });
     strCards.forEach((card) => {
-      const title = card.querySelector(".var-card__title");
-      const name = (title?.textContent ?? "").toLowerCase();
-      const show = !search || name.includes(search);
+      const title = card.querySelector(".var-card__title")?.textContent ?? "";
+      const subtitle = card.querySelector(".var-card__subtitle")?.textContent ?? "";
+      const searchable = (title + " " + subtitle).toLowerCase();
+      const show = !search || searchable.includes(search);
       card.style.display = show ? "" : "none";
       if (show) anyStrVisible = true;
     });
@@ -546,12 +557,14 @@ class SupervisorDashboard extends HTMLElement {
       const checked = item.value === "true";
       const badgeClass = checked ? "status-badge--on" : "status-badge--off";
       const badgeText = checked ? "On" : "Off";
+      const showDesc = item.description && item.description !== item.variableName;
       return `
         <div class="var-card" id="card-bool-${item.index}" data-index="${item.index}">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.toggle}</div>
             <div>
-              <h3 class="var-card__title">${this._escape(item.name)}</h3>
+              <h3 class="var-card__title">${this._escape(item.variableName)}</h3>
+              ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
               <span class="status-badge ${badgeClass}">${badgeText}</span>
             </div>
           </div>
@@ -575,11 +588,15 @@ class SupervisorDashboard extends HTMLElement {
     }
     return data.map((item) => {
       const safeValue = this._truncateToMax(item.value, MAX_STRING_LENGTH);
+      const showDesc = item.description && item.description !== item.variableName;
       return `
         <div class="var-card" id="card-str-${item.index}" data-index="${item.index}">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.message}</div>
-            <h3 class="var-card__title">${this._escape(item.name)}</h3>
+            <div>
+              <h3 class="var-card__title">${this._escape(item.variableName)}</h3>
+              ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
+            </div>
           </div>
           <div class="var-card__body">
             <textarea class="md-input" rows="4" maxlength="${MAX_STRING_LENGTH}" id="${item.textAreaName}" data-index="${item.index}">${this._escape(safeValue)}</textarea>
