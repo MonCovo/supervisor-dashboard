@@ -24,6 +24,43 @@ A Webex Contact Centre supervisor widget that graphically displays global variab
 
 Add the widget to your Desktop layout. The framework may pass properties as **camelCase**—use both formats if one fails.
 
+```json
+        {
+          "nav": {
+            "label": "Supervisor Dashboard",
+            "icon": "settings",
+            "iconType": "momentum",
+            "navigateTo": "supervisordashboard",
+            "align": "top"
+          },
+          "page": {
+            "id": "supervisordashboard",
+            "widgets": {
+              "right": {
+                "comp": "supervisor-dashboard",
+                "script": "https://moncovo.github.io/supervisor-dashboard/supervisor-dashboard.js",
+                "wrapper": {
+                  "title": "Global Variable Dashboard",
+                  "maximizeAreaName": "app-maximize-area"
+                },
+                "properties": {
+                    "accessToken": "$STORE.auth.accessToken",
+                    "orgId": "$STORE.agent.orgId",
+                    "is-dark-mode": "$STORE.app.darkMode"
+                }
+              }
+            },
+            "layout": {
+              "areas": [["right"]],
+              "size": {
+                "cols": [1],
+                "rows": [1]
+              }
+            }
+          }
+        }
+```
+
 **Option – STORE (when available):**
 ```json
 "properties": {
