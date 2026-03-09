@@ -205,6 +205,40 @@ style.textContent = `
 
 .msg-feedback { min-height: 24px; margin-top: 16px; font-size: 13px; }
 
+/* Search / filter bar */
+.filter-bar {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid ${MD.gray12};
+}
+.filter-bar__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${MD.gray50};
+  margin-bottom: 8px;
+}
+.filter-bar__input {
+  width: 100%;
+  max-width: 320px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid ${MD.gray16};
+  border-radius: 6px;
+  color: ${MD.gray70};
+  transition: border-color 150ms;
+}
+.filter-bar__input::placeholder {
+  color: ${MD.gray50};
+}
+.filter-bar__input:focus {
+  outline: none;
+  border-color: ${MD.primary};
+}
+
 /* Section titles */
 .section-title {
   font-size: 12px; font-weight: 600; text-transform: uppercase;
@@ -229,6 +263,10 @@ template.innerHTML = `
   <div id="loading" class="loading" style="display:none">Loading...</div>
   <div id="error" class="error" style="display:none"></div>
   <div id="content" style="display:none">
+    <div class="filter-bar">
+      <label class="filter-bar__label" for="variable-search">Search variables</label>
+      <input type="text" id="variable-search" class="filter-bar__input" placeholder="Type variable name to filter..." autocomplete="off" />
+    </div>
     <div id="boolean-section">
       <div class="section-title">Toggle Controls</div>
       <div id="boolean-cards" class="dashboard"></div>
@@ -372,10 +410,10 @@ class SupervisorDashboard extends HTMLElement {
     }
   }
 
-  async _fetchGlobalVariables(org, username, token) {
+  async _fetchGlobalVariables(org, _username, token) {
     const params = new URLSearchParams();
-    if (username) params.set("search", username);
-    params.set("limit", "500"); // request enough to get all variables in one go
+    // Do not pass search=username - that limits results to variables matching the user (e.g. Supervisor_*). Fetch all org variables.
+    params.set("limit", "500");
     const url = `${WXCC_API_BASE}/organization/${org}/v2/cad-variable?${params}`;
     const res = await fetch(url, {
       method: "GET",
@@ -461,6 +499,43 @@ class SupervisorDashboard extends HTMLElement {
 
     this._state = { ...this._state, ...state, token };
     this._showContent();
+    this._attachSearchFilter();
+    this._onSearchInput(); // re-apply filter after render (e.g. after retry)
+  }
+
+  _attachSearchFilter() {
+    if (this._searchFilterAttached) return;
+    const input = this.shadowRoot.getElementById("variable-search");
+    if (!input) return;
+    this._searchFilterAttached = true;
+    input.addEventListener("input", () => this._onSearchInput());
+  }
+
+  _onSearchInput() {
+    const input = this.shadowRoot.getElementById("variable-search");
+    const search = (input?.value ?? "").trim().toLowerCase();
+    const boolCards = this.shadowRoot.querySelectorAll("#boolean-cards .var-card");
+    const strCards = this.shadowRoot.querySelectorAll("#string-cards .var-card");
+    let anyBoolVisible = false;
+    let anyStrVisible = false;
+    boolCards.forEach((card) => {
+      const title = card.querySelector(".var-card__title");
+      const name = (title?.textContent ?? "").toLowerCase();
+      const show = !search || name.includes(search);
+      card.style.display = show ? "" : "none";
+      if (show) anyBoolVisible = true;
+    });
+    strCards.forEach((card) => {
+      const title = card.querySelector(".var-card__title");
+      const name = (title?.textContent ?? "").toLowerCase();
+      const show = !search || name.includes(search);
+      card.style.display = show ? "" : "none";
+      if (show) anyStrVisible = true;
+    });
+    const boolSection = this.shadowRoot.getElementById("boolean-section");
+    const strSection = this.shadowRoot.getElementById("string-section");
+    if (boolSection) boolSection.style.display = anyBoolVisible || !search ? "" : "none";
+    if (strSection) strSection.style.display = anyStrVisible || !search ? "" : "none";
   }
 
   _generateBooleanCards(data) {
