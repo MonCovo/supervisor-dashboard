@@ -345,126 +345,125 @@ input.md-input.other-value { min-height: 0; resize: none; }
   margin-right: 8px; vertical-align: middle;
 }
 
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  :host {
-    color: ${MD.darkText};
-    background: ${MD.darkBg};
-  }
-  #content { background: ${MD.darkBg}; }
-  #content::-webkit-scrollbar-track { background: ${MD.darkBorder}; }
-  #content::-webkit-scrollbar-thumb { background: ${MD.darkMuted}; }
-  #content::-webkit-scrollbar-thumb:hover { background: ${MD.darkText}; }
-
-  .loading, .error {
-    color: ${MD.darkText};
-    background: ${MD.darkBg};
-  }
-  .loading::before { border-color: ${MD.primary}; border-top-color: transparent; }
-
-  .var-card {
-    background: ${MD.darkCard};
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    border-color: transparent;
-  }
-  .var-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-  .var-card:focus-within { box-shadow: 0 0 0 2px ${MD.primary}; }
-  .var-card--changed {
-    border-color: ${MD.primary};
-    box-shadow: 0 2px 8px rgba(0,160,209,0.35);
-  }
-
-  .var-card__icon {
-    background: rgba(255,255,255,0.12);
-    color: ${MD.primary};
-  }
-  .var-card__title { color: ${MD.darkText}; }
-  .var-card__subtitle { color: ${MD.darkMuted}; }
-  .var-card__type-badge {
-    color: ${MD.darkMuted};
-    background: rgba(255,255,255,0.12);
-  }
-
-  .status-badge--on {
-    background: ${MD.darkSuccessBg};
-    color: #5dd879;
-  }
-  .status-badge--off {
-    background: rgba(255,255,255,0.12);
-    color: ${MD.darkMuted};
-  }
-
-  .md-toggle__track { background: rgba(255,255,255,0.2); }
-  .md-toggle__track::after { background: ${MD.white}; }
-  .md-toggle__input:checked + .md-toggle__track { background: ${MD.primary}; }
-  .md-toggle__input:focus + .md-toggle__track { box-shadow: 0 0 0 2px ${MD.primary}; }
-
-  .md-btn--secondary {
-    background: rgba(255,255,255,0.12);
-    color: ${MD.darkText};
-  }
-  .md-btn--secondary:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
-
-  .md-input {
-    background: ${MD.darkInputBg};
-    border-color: ${MD.darkBorder};
-    color: ${MD.darkText};
-  }
-  .md-input::placeholder { color: ${MD.darkMuted}; }
-  .md-input:focus { border-color: ${MD.primary}; }
-  .char-count { color: ${MD.darkMuted}; }
-
-  .msg-feedback--error {
-    background: ${MD.darkErrorBg};
-    border-color: rgba(215,46,21,0.4);
-    color: #f28b82;
-  }
-  .msg-feedback--success {
-    background: ${MD.darkSuccessBg};
-    border-color: rgba(16,137,62,0.4);
-    color: #81c995;
-  }
-
-  .dashboard-header { border-bottom-color: ${MD.darkBorder}; }
-  .dashboard-header__title { color: ${MD.darkText}; }
-  .dashboard-header__meta { color: ${MD.darkMuted}; }
-
-  .empty-state {
-    background: ${MD.darkCard};
-    border-color: ${MD.darkBorder};
-    color: ${MD.darkMuted};
-  }
-
-  .filter-bar { border-bottom-color: ${MD.darkBorder}; }
-  .filter-bar__label { color: ${MD.darkMuted}; }
-  .filter-bar__input {
-    background: ${MD.darkInputBg};
-    border-color: ${MD.darkBorder};
-    color: ${MD.darkText};
-  }
-  .filter-bar__input::placeholder { color: ${MD.darkMuted}; }
-
-  .type-filter__btn {
-    background: ${MD.darkCard};
-    border-color: ${MD.darkBorder};
-    color: ${MD.darkText};
-  }
-  .type-filter__btn:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: ${MD.darkBorder};
-  }
-  .type-filter__btn--active {
-    background: ${MD.primary};
-    color: ${MD.white};
-    border-color: ${MD.primary};
-  }
-  .type-filter__btn--active:hover {
-    background: ${MD.primaryHover};
-    border-color: ${MD.primaryHover};
-  }
-
-  .section-title { color: ${MD.darkMuted}; }
+/* Dark mode: applied when host has .dark-mode (set from attribute or prefers-color-scheme) */
+:host(.dark-mode) {
+  color: ${MD.darkText};
+  background: ${MD.darkBg};
 }
+:host(.dark-mode) #content { background: ${MD.darkBg}; }
+:host(.dark-mode) #content::-webkit-scrollbar-track { background: ${MD.darkBorder}; }
+:host(.dark-mode) #content::-webkit-scrollbar-thumb { background: ${MD.darkMuted}; }
+:host(.dark-mode) #content::-webkit-scrollbar-thumb:hover { background: ${MD.darkText}; }
+
+:host(.dark-mode) .loading,
+:host(.dark-mode) .error {
+  color: ${MD.darkText};
+  background: ${MD.darkBg};
+}
+:host(.dark-mode) .loading::before { border-color: ${MD.primary}; border-top-color: transparent; }
+
+:host(.dark-mode) .var-card {
+  background: ${MD.darkCard};
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border-color: transparent;
+}
+:host(.dark-mode) .var-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+:host(.dark-mode) .var-card:focus-within { box-shadow: 0 0 0 2px ${MD.primary}; }
+:host(.dark-mode) .var-card--changed {
+  border-color: ${MD.primary};
+  box-shadow: 0 2px 8px rgba(0,160,209,0.35);
+}
+
+:host(.dark-mode) .var-card__icon {
+  background: rgba(255,255,255,0.12);
+  color: ${MD.primary};
+}
+:host(.dark-mode) .var-card__title { color: ${MD.darkText}; }
+:host(.dark-mode) .var-card__subtitle { color: ${MD.darkMuted}; }
+:host(.dark-mode) .var-card__type-badge {
+  color: ${MD.darkMuted};
+  background: rgba(255,255,255,0.12);
+}
+
+:host(.dark-mode) .status-badge--on {
+  background: ${MD.darkSuccessBg};
+  color: #5dd879;
+}
+:host(.dark-mode) .status-badge--off {
+  background: rgba(255,255,255,0.12);
+  color: ${MD.darkMuted};
+}
+
+:host(.dark-mode) .md-toggle__track { background: rgba(255,255,255,0.2); }
+:host(.dark-mode) .md-toggle__track::after { background: ${MD.white}; }
+:host(.dark-mode) .md-toggle__input:checked + .md-toggle__track { background: ${MD.primary}; }
+:host(.dark-mode) .md-toggle__input:focus + .md-toggle__track { box-shadow: 0 0 0 2px ${MD.primary}; }
+
+:host(.dark-mode) .md-btn--secondary {
+  background: rgba(255,255,255,0.12);
+  color: ${MD.darkText};
+}
+:host(.dark-mode) .md-btn--secondary:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+
+:host(.dark-mode) .md-input {
+  background: ${MD.darkInputBg};
+  border-color: ${MD.darkBorder};
+  color: ${MD.darkText};
+}
+:host(.dark-mode) .md-input::placeholder { color: ${MD.darkMuted}; }
+:host(.dark-mode) .md-input:focus { border-color: ${MD.primary}; }
+:host(.dark-mode) .char-count { color: ${MD.darkMuted}; }
+
+:host(.dark-mode) .msg-feedback--error {
+  background: ${MD.darkErrorBg};
+  border-color: rgba(215,46,21,0.4);
+  color: #f28b82;
+}
+:host(.dark-mode) .msg-feedback--success {
+  background: ${MD.darkSuccessBg};
+  border-color: rgba(16,137,62,0.4);
+  color: #81c995;
+}
+
+:host(.dark-mode) .dashboard-header { border-bottom-color: ${MD.darkBorder}; }
+:host(.dark-mode) .dashboard-header__title { color: ${MD.darkText}; }
+:host(.dark-mode) .dashboard-header__meta { color: ${MD.darkMuted}; }
+
+:host(.dark-mode) .empty-state {
+  background: ${MD.darkCard};
+  border-color: ${MD.darkBorder};
+  color: ${MD.darkMuted};
+}
+
+:host(.dark-mode) .filter-bar { border-bottom-color: ${MD.darkBorder}; }
+:host(.dark-mode) .filter-bar__label { color: ${MD.darkMuted}; }
+:host(.dark-mode) .filter-bar__input {
+  background: ${MD.darkInputBg};
+  border-color: ${MD.darkBorder};
+  color: ${MD.darkText};
+}
+:host(.dark-mode) .filter-bar__input::placeholder { color: ${MD.darkMuted}; }
+
+:host(.dark-mode) .type-filter__btn {
+  background: ${MD.darkCard};
+  border-color: ${MD.darkBorder};
+  color: ${MD.darkText};
+}
+:host(.dark-mode) .type-filter__btn:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: ${MD.darkBorder};
+}
+:host(.dark-mode) .type-filter__btn--active {
+  background: ${MD.primary};
+  color: ${MD.white};
+  border-color: ${MD.primary};
+}
+:host(.dark-mode) .type-filter__btn--active:hover {
+  background: ${MD.primaryHover};
+  border-color: ${MD.primaryHover};
+}
+
+:host(.dark-mode) .section-title { color: ${MD.darkMuted}; }
 `;
 
 const template = document.createElement("template");
@@ -490,7 +489,7 @@ template.innerHTML = `
 
 class SupervisorDashboard extends HTMLElement {
   static get observedAttributes() {
-    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase", "api-region", "apiRegion"];
+    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase", "api-region", "apiRegion", "dark", "theme", "is-dark-mode", "isDarkMode"];
   }
 
   constructor() {
@@ -517,9 +516,27 @@ class SupervisorDashboard extends HTMLElement {
     return WXCC_API_BASE_DEFAULT;
   }
 
+  _applyDarkMode() {
+    const themeDark = this.getAttribute("theme") === "dark";
+    const attrVal = (this.getAttribute("is-dark-mode") || this.getAttribute("isDarkMode") || "").toString().toLowerCase();
+    const storeFromAttr = (this.hasAttribute("is-dark-mode") || this.hasAttribute("isDarkMode")) && (attrVal === "true" || attrVal === "1");
+    const storeFromProp = this.isDarkMode === true || this.isDarkMode === "true";
+    const storeDark = storeFromAttr || storeFromProp;
+    const explicitDark = this.hasAttribute("dark") || themeDark || storeDark;
+    const systemDark = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = explicitDark || systemDark;
+    this.classList.toggle("dark-mode", !!isDark);
+  }
+
   async connectedCallback() {
     this.shadowRoot.appendChild(style.cloneNode(true));
     this.shadowRoot.appendChild(template.content.cloneNode(true));
+
+    this._applyDarkMode();
+    this._darkModeQuery = typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)");
+    if (this._darkModeQuery && this._darkModeQuery.addEventListener) {
+      this._darkModeQuery.addEventListener("change", () => this._applyDarkMode());
+    }
 
     // Support both kebab-case and camelCase (WxCC layout may use either)
     const token = this._getAttr("accessToken", "access-token");
@@ -578,6 +595,10 @@ class SupervisorDashboard extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldVal, newVal) {
+    if (name === "dark" || name === "theme" || name === "is-dark-mode" || name === "isDarkMode") {
+      this._applyDarkMode();
+      return;
+    }
     const errorEl = this.shadowRoot?.getElementById("error");
     if (errorEl?.style.display !== "block") return;
     const token = this._getAttr("accessToken", "access-token");
