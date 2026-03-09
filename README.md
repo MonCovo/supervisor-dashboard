@@ -4,9 +4,13 @@ A Webex Contact Centre supervisor widget that graphically displays global variab
 
 ## Features
 
-- **Card-based dashboard** with icons and visual status indicators
+- **Card-based dashboard** with icons, variable count in the header, and visual status indicators
 - **Boolean variables**: Toggle switches with green "On" / gray "Off" badges
 - **String variables**: Textareas with character count and inline editing
+- **Other types**: Integer/Float use number inputs; Date uses a date picker
+- **Search / filter**: Type a variable name to filter the list (case-insensitive)
+- **Scrollable layout**: Content scrolls when many variables don’t fit in the panel
+- **Accessibility**: ARIA labels on controls, live region for success/error messages
 - **Momentum Design** styling aligned with Webex Contact Centre
 
 ## GitHub Pages Deployment
@@ -18,31 +22,26 @@ A Webex Contact Centre supervisor widget that graphically displays global variab
 
 ## Desktop Layout Configuration
 
-Add the widget to your Extensible Supervisor Desktop layout JSON:
+Add the widget to your Desktop layout. The framework may pass properties as **camelCase**—use both formats if one fails.
 
+**Option – STORE (when available):**
 ```json
-{
-  "type": "panel",
-  "url": "https://your-username.github.io/supervisor-dashboard/",
-  "properties": {
-    "access-token": "$STORE.auth.accessToken",
-    "org-id": "$STORE.agent.orgId",
-    "user-id": "$STORE.agent.agentId"
-  }
+"properties": {
+  "accessToken": "$STORE.auth.accessToken",
+  "orgId": "$STORE.agent.orgId"
 }
 ```
 
-| Attribute      | STORE reference           | Description                    |
-|----------------|---------------------------|--------------------------------|
-| `access-token` | `$STORE.auth.accessToken` | Signed-in user's bearer token  |
-| `org-id`       | `$STORE.agent.orgId`      | WxCC organization ID           |
-| `user-id`      | `$STORE.agent.agentId`    | Optional: filter variables     |
-| `user`         | (prefix string)           | Alternative: filter by prefix  |
+| Attribute       | Description                                      |
+|-----------------|--------------------------------------------------|
+| `accessToken`   | `$STORE.auth.accessToken` – bearer token         |
+| `orgId`         | `$STORE.agent.orgId` – WxCC organization ID      |
+
+The widget loads **all** organisation global variables; use the in-app search box to filter by variable name.
 
 ## Configuration
 
-- **API region**: Edit `WXCC_API_BASE` in `supervisor-dashboard.js` for your region (`eu1`, `eu2`, `na1`, etc.).
-- Default: `https://api.wxcc-eu1.cisco.com`
+- **API region**: Set the `api-region` (or `apiRegion`) attribute on the component, e.g. `api-region="eu1"`, `api-region="na1"`. Supported: `eu1`, `eu2`, `na1`. Default: `eu1` (`https://api.wxcc-eu1.cisco.com`). You can also edit `WXCC_API_BASE_DEFAULT` in `supervisor-dashboard.js` to change the default.
 
 ## Local Development
 

@@ -4,10 +4,16 @@
  * Supports Boolean (toggles), String (textareas), and other types (Integer, Float, Date, etc.) with single-line edit and Apply.
  */
 
-// Configurable - change for different regions (eu1, eu2, na1, etc.)
-const WXCC_API_BASE = "https://api.wxcc-eu1.cisco.com";
+// Default API base - overridden by api-region attribute (eu1, eu2, na1, etc.)
+const WXCC_API_BASE_DEFAULT = "https://api.wxcc-eu1.cisco.com";
 const SUCCESS_MSG_DURATION_MS = 4000;
 const MAX_STRING_LENGTH = 256;
+
+const API_REGION_HOSTS = {
+  eu1: "https://api.wxcc-eu1.cisco.com",
+  eu2: "https://api.wxcc-eu2.cisco.com",
+  na1: "https://api.wxcc-na1.cisco.com",
+};
 
 // Momentum Design tokens (Cisco Webex design system)
 const MD = {
@@ -85,8 +91,14 @@ style.textContent = `
   border-radius: 8px;
   box-shadow: 0 2px 4px ${MD.gray12};
   padding: 20px;
-  transition: box-shadow 150ms, border-color 150ms;
+  transition: box-shadow 150ms, border-color 150ms, transform 150ms;
   border: 2px solid transparent;
+}
+.var-card:hover {
+  box-shadow: 0 4px 12px ${MD.gray16};
+}
+.var-card:focus-within {
+  box-shadow: 0 0 0 2px ${MD.primary};
 }
 .var-card--changed {
   border-color: ${MD.primary};
@@ -209,19 +221,49 @@ style.textContent = `
 .md-btn--secondary { background: ${MD.gray16}; color: ${MD.gray70}; }
 .md-btn--secondary:hover:not(:disabled) { background: ${MD.gray12}; }
 .md-btn--has-changes { background: ${MD.primary}; color: ${MD.white}; }
+.md-btn--loading { position: relative; color: transparent; pointer-events: none; }
+.md-btn--loading::after {
+  content: ""; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  border: 2px solid ${MD.white}; border-top-color: transparent; border-radius: 4px;
+  width: 18px; height: 18px; margin: auto; animation: spin 0.6s linear infinite;
+}
 
-/* Textarea */
+/* Textarea and text-style input */
 .md-input {
   width: 100%; min-height: 80px; padding: 12px;
   font-family: inherit; font-size: 14px; line-height: 1.5;
   border: 1px solid ${MD.gray16}; border-radius: 4px;
   resize: vertical; transition: border-color 150ms;
 }
+input.md-input.other-value { min-height: 0; resize: none; }
 .md-input:focus { outline: none; border-color: ${MD.primary}; }
 .char-count { font-size: 12px; color: ${MD.gray50}; margin-top: 4px; }
 .char-count--over { color: ${MD.error}; }
 
-.msg-feedback { min-height: 24px; margin-top: 16px; font-size: 13px; }
+.msg-feedback {
+  min-height: 24px; margin-top: 20px; padding: 12px 16px; font-size: 13px;
+  border-radius: 8px; border: 1px solid transparent;
+}
+.msg-feedback:not(:empty) { margin-bottom: 8px; }
+.msg-feedback.msg-feedback--error { background: rgba(215,46,21,0.08); border-color: rgba(215,46,21,0.3); }
+.msg-feedback.msg-feedback--success { background: ${MD.successBg}; border-color: rgba(16,137,62,0.3); }
+
+.dashboard-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid ${MD.gray12};
+}
+.dashboard-header__title { font-size: 18px; font-weight: 600; color: ${MD.gray70}; margin: 0; }
+.dashboard-header__meta { font-size: 13px; color: ${MD.gray50}; }
+
+.empty-state {
+  text-align: center; padding: 32px 24px; background: ${MD.white}; border-radius: 8px;
+  border: 1px dashed ${MD.gray16}; color: ${MD.gray50}; font-size: 14px;
+}
+.empty-state__icon { margin-bottom: 12px; opacity: 0.6; }
+.empty-state__icon svg { width: 48px; height: 48px; }
+.empty-state__text { margin: 0; font-size: 14px; }
+.section-block { margin-top: 28px; }
+.section-block:first-of-type { margin-top: 0; }
 
 /* Search / filter bar */
 .filter-bar {
@@ -281,29 +323,33 @@ template.innerHTML = `
   <div id="loading" class="loading" style="display:none">Loading...</div>
   <div id="error" class="error" style="display:none"></div>
   <div id="content" style="display:none">
+    <div class="dashboard-header">
+      <h2 class="dashboard-header__title">Global Variables</h2>
+      <span class="dashboard-header__meta" id="variable-count" aria-live="polite"></span>
+    </div>
     <div class="filter-bar">
       <label class="filter-bar__label" for="variable-search">Search variables</label>
-      <input type="text" id="variable-search" class="filter-bar__input" placeholder="Type variable name to filter..." autocomplete="off" />
+      <input type="text" id="variable-search" class="filter-bar__input" placeholder="Type variable name to filter..." autocomplete="off" aria-describedby="variable-count" />
     </div>
-    <div id="boolean-section">
+    <div id="boolean-section" class="section-block">
       <div class="section-title">Toggle Controls</div>
       <div id="boolean-cards" class="dashboard"></div>
     </div>
-    <div id="string-section" style="margin-top: 24px;">
+    <div id="string-section" class="section-block">
       <div class="section-title">Messages</div>
       <div id="string-cards" class="dashboard"></div>
     </div>
-    <div id="other-section" style="margin-top: 24px;">
+    <div id="other-section" class="section-block">
       <div class="section-title">Other (Number, Date, etc.)</div>
       <div id="other-cards" class="dashboard"></div>
     </div>
-    <div class="msg-feedback" id="submitted"></div>
+    <div class="msg-feedback" id="submitted" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
 `;
 
 class SupervisorDashboard extends HTMLElement {
   static get observedAttributes() {
-    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase"];
+    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase", "api-region", "apiRegion"];
   }
 
   constructor() {
@@ -322,6 +368,12 @@ class SupervisorDashboard extends HTMLElement {
       if (v) return v;
     }
     return "";
+  }
+
+  _getApiBase() {
+    const region = this._getAttr("apiRegion", "api-region").toLowerCase().trim();
+    if (region && API_REGION_HOSTS[region]) return API_REGION_HOSTS[region];
+    return WXCC_API_BASE_DEFAULT;
   }
 
   async connectedCallback() {
@@ -361,8 +413,18 @@ class SupervisorDashboard extends HTMLElement {
       .then((result) => this._render(result))
       .catch((err) => {
         console.error("[SupervisorDashboard] ERROR:", err);
+        this._state.token = null;
         this._showError(err.message || "Failed to load");
       });
+
+    this._boundClick = (e) => this._onClick(e);
+    this._boundKeyup = (e) => this._onKeyup(e);
+    this._boundInput = (e) => this._onKeyup(e);
+    this._boundPaste = (e) => this._onPaste(e);
+    this.shadowRoot.addEventListener("click", this._boundClick);
+    this.shadowRoot.addEventListener("keyup", this._boundKeyup);
+    this.shadowRoot.addEventListener("input", this._boundInput);
+    this.shadowRoot.addEventListener("paste", this._boundPaste, true);
   }
 
   async _fetchTokenFromService(url, passPhrase) {
@@ -375,12 +437,11 @@ class SupervisorDashboard extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldVal, newVal) {
-    if (this._state.token != null) return;
+    const errorEl = this.shadowRoot?.getElementById("error");
+    if (errorEl?.style.display !== "block") return;
     const token = this._getAttr("accessToken", "access-token");
     const org = this._getAttr("orgId", "org-id");
-    if (token && org && this.shadowRoot?.getElementById("error")?.style.display === "block") {
-      this._retryInit();
-    }
+    if (token && org) this._retryInit();
   }
 
   _retryInit() {
@@ -391,7 +452,10 @@ class SupervisorDashboard extends HTMLElement {
       this._showLoading();
       this._fetchGlobalVariables(org, username, token)
         .then((r) => this._render(r))
-        .catch((err) => this._showError(err.message || "Failed to load"));
+        .catch((err) => {
+          this._state.token = null;
+          this._showError(err.message || "Failed to load");
+        });
     }
   }
 
@@ -434,9 +498,9 @@ class SupervisorDashboard extends HTMLElement {
 
   async _fetchGlobalVariables(org, _username, token) {
     const params = new URLSearchParams();
-    // Do not pass search=username - that limits results to variables matching the user (e.g. Supervisor_*). Fetch all org variables.
     params.set("limit", "500");
-    const url = `${WXCC_API_BASE}/organization/${org}/v2/cad-variable?${params}`;
+    const base = this._getApiBase();
+    const url = `${base}/organization/${org}/v2/cad-variable?${params}`;
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -460,7 +524,7 @@ class SupervisorDashboard extends HTMLElement {
     const otherdata = [];
     const state = {
       agentEditable: [], variableType: [], agentViewable: [], reportable: [],
-      active: [], defaultValue: [], gvid: [], gvname: [], description: [], savedtext: [],
+      active: [], defaultValue: [], gvid: [], gvname: [], description: [], savedtext: [], sensitive: [],
       checkboxname: [], submitname: [], textareaname: [], remainingname: [], otherinputname: [],
     };
 
@@ -471,6 +535,7 @@ class SupervisorDashboard extends HTMLElement {
       state.agentViewable[i] = v.agentViewable;
       state.reportable[i] = v.reportable;
       state.active[i] = v.active;
+      state.sensitive[i] = v.sensitive === true;
       state.defaultValue[i] = v.defaultValue;
       state.gvid[i] = v.id;
       state.gvname[i] = v.name;
@@ -492,6 +557,10 @@ class SupervisorDashboard extends HTMLElement {
           submitName: state.submitname[i],
         });
       } else if (v.variableType === "String" && v.active) {
+        const raw = v.defaultValue == null ? "" : String(v.defaultValue);
+        if (raw.length > MAX_STRING_LENGTH) {
+          console.warn(`[SupervisorDashboard] Variable "${v.name}" value truncated from ${raw.length} to ${MAX_STRING_LENGTH} characters.`);
+        }
         const truncated = this._truncateToMax(v.defaultValue, MAX_STRING_LENGTH);
         state.defaultValue[i] = truncated;
         state.savedtext[i] = truncated;
@@ -505,8 +574,9 @@ class SupervisorDashboard extends HTMLElement {
           remainingName: state.remainingname[i],
         });
       } else if (v.active) {
-        state.defaultValue[i] = v.defaultValue == null ? "" : String(v.defaultValue);
-        state.savedtext[i] = state.defaultValue[i];
+        const { value: normalized } = this._getOtherInputTypeAndValue(v.variableType, v.defaultValue);
+        state.defaultValue[i] = normalized;
+        state.savedtext[i] = normalized;
         otherdata.push({
           index: i,
           variableName: state.gvname[i],
@@ -531,14 +601,14 @@ class SupervisorDashboard extends HTMLElement {
       }
     }
 
-    context.addEventListener("click", (e) => this._onClick(e, state, token));
-    context.addEventListener("keyup", (e) => this._onKeyup(e, state));
-    context.addEventListener("paste", (e) => this._onPaste(e, state), true);
-
     this._state = { ...this._state, ...state, token };
+
+    const countEl = context.getElementById("variable-count");
+    if (countEl) countEl.textContent = `${total} variable${total !== 1 ? "s" : ""}`;
+
     this._showContent();
     this._attachSearchFilter();
-    this._onSearchInput(); // re-apply filter after render (e.g. after retry)
+    this._onSearchInput();
   }
 
   _attachSearchFilter() {
@@ -589,19 +659,20 @@ class SupervisorDashboard extends HTMLElement {
 
   _generateBooleanCards(data) {
     if (!data.length) {
-      return `<div class="var-card"><p style="margin:0;color:${MD.gray50}">No boolean variables</p></div>`;
+      return `<div class="empty-state"><div class="empty-state__icon">${ICONS.toggle}</div><p class="empty-state__text">No boolean variables</p></div>`;
     }
     return data.map((item) => {
       const checked = item.value === "true";
       const badgeClass = checked ? "status-badge--on" : "status-badge--off";
       const badgeText = checked ? "On" : "Off";
       const showDesc = item.description && item.description !== item.variableName;
+      const nameEsc = this._escape(item.variableName);
       return `
         <div class="var-card" id="card-bool-${item.index}" data-index="${item.index}">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.toggle}</div>
             <div>
-              <h3 class="var-card__title">${this._escape(item.variableName)}</h3>
+              <h3 class="var-card__title">${nameEsc}</h3>
               ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
               <span class="status-badge ${badgeClass}">${badgeText}</span>
             </div>
@@ -609,10 +680,10 @@ class SupervisorDashboard extends HTMLElement {
           <div class="var-card__body">
             <div class="var-card__controls">
               <div class="md-toggle">
-                <input type="checkbox" class="md-toggle__input" tabindex="0" data-index="${item.index}" id="${item.checkName}"${checked ? " checked" : ""}>
+                <input type="checkbox" class="md-toggle__input" tabindex="0" data-index="${item.index}" id="${item.checkName}" aria-label="Toggle ${nameEsc}"${checked ? " checked" : ""}>
                 <label class="md-toggle__track" for="${item.checkName}"></label>
               </div>
-              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled>Apply</button>
+              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled aria-label="Apply value for ${nameEsc}">Apply</button>
             </div>
           </div>
         </div>
@@ -622,25 +693,26 @@ class SupervisorDashboard extends HTMLElement {
 
   _generateStringCards(data) {
     if (!data.length) {
-      return `<div class="var-card"><p style="margin:0;color:${MD.gray50}">No string variables</p></div>`;
+      return `<div class="empty-state"><div class="empty-state__icon">${ICONS.message}</div><p class="empty-state__text">No string variables</p></div>`;
     }
     return data.map((item) => {
       const safeValue = this._truncateToMax(item.value, MAX_STRING_LENGTH);
       const showDesc = item.description && item.description !== item.variableName;
+      const nameEsc = this._escape(item.variableName);
       return `
         <div class="var-card" id="card-str-${item.index}" data-index="${item.index}">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.message}</div>
             <div>
-              <h3 class="var-card__title">${this._escape(item.variableName)}</h3>
+              <h3 class="var-card__title">${nameEsc}</h3>
               ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
             </div>
           </div>
           <div class="var-card__body">
-            <textarea class="md-input" rows="4" maxlength="${MAX_STRING_LENGTH}" id="${item.textAreaName}" data-index="${item.index}">${this._escape(safeValue)}</textarea>
+            <textarea class="md-input" rows="4" maxlength="${MAX_STRING_LENGTH}" id="${item.textAreaName}" data-index="${item.index}" aria-label="Edit ${nameEsc}">${this._escape(safeValue)}</textarea>
             <div class="char-count" id="${item.remainingName}"></div>
             <div class="var-card__controls" style="margin-top:12px">
-              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled>Apply</button>
+              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled aria-label="Apply value for ${nameEsc}">Apply</button>
             </div>
           </div>
         </div>
@@ -648,27 +720,47 @@ class SupervisorDashboard extends HTMLElement {
     }).join("");
   }
 
+  _getOtherInputTypeAndValue(variableType, value) {
+    const str = value == null ? "" : String(value).trim();
+    switch (variableType) {
+      case "Integer":
+        return { type: "number", step: "", value: str };
+      case "Float":
+      case "Decimal":
+        return { type: "number", step: "any", value: str };
+      case "Date":
+        const dateVal = str ? (str.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || "") : "";
+        return { type: "date", step: "", value: dateVal };
+      default:
+        return { type: "text", step: "", value: str };
+    }
+  }
+
   _generateOtherCards(data) {
     if (!data.length) {
-      return `<div class="var-card"><p style="margin:0;color:${MD.gray50}">No other variables</p></div>`;
+      return `<div class="empty-state"><div class="empty-state__icon">${ICONS.other}</div><p class="empty-state__text">No other variables</p></div>`;
     }
     return data.map((item) => {
       const showDesc = item.description && item.description !== item.variableName;
       const typeLabel = item.variableType || "Other";
+      const { type: inputType, step, value: inputValue } = this._getOtherInputTypeAndValue(item.variableType, item.value);
+      const nameEsc = this._escape(item.variableName);
+      const valueEsc = this._escape(inputValue);
+      const stepAttr = step ? ` step="${this._escape(step)}"` : "";
       return `
         <div class="var-card" id="card-other-${item.index}" data-index="${item.index}">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.other}</div>
             <div>
-              <h3 class="var-card__title">${this._escape(item.variableName)}</h3>
+              <h3 class="var-card__title">${nameEsc}</h3>
               ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
               <span class="var-card__type-badge">${this._escape(typeLabel)}</span>
             </div>
           </div>
           <div class="var-card__body">
-            <input type="text" class="md-input other-value" id="${item.inputName}" data-index="${item.index}" value="${this._escape(item.value)}" />
+            <input type="${inputType}" class="md-input other-value" id="${item.inputName}" data-index="${item.index}" value="${valueEsc}"${stepAttr} aria-label="Edit ${nameEsc}" />
             <div class="var-card__controls" style="margin-top:12px">
-              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled>Apply</button>
+              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled aria-label="Apply value for ${nameEsc}">Apply</button>
             </div>
           </div>
         </div>
@@ -716,12 +808,14 @@ class SupervisorDashboard extends HTMLElement {
     return index !== "" ? parseInt(index, 10) : -1;
   }
 
-  _onClick(e, state, token) {
+  _onClick(e) {
+    const state = this._state;
+    const token = state?.token;
     const btn = e.target.closest("button[type=button]");
     const cb = e.target.closest("input[type=checkbox]");
     if (btn) {
       const index = this._getIndexFromTarget(btn, state);
-      if (index >= 0) this._handleSubmit(btn, index, state, token);
+      if (index >= 0 && token) this._handleSubmit(btn, index, state, token);
       return;
     }
     if (cb && cb.type === "checkbox") {
@@ -743,8 +837,11 @@ class SupervisorDashboard extends HTMLElement {
 
   _handleSubmit(btn, index, state, token) {
     const org = this._getAttr("org-id", "orgId");
+    const base = this._getApiBase();
     btn.disabled = true;
-    btn.className = "md-btn md-btn--secondary";
+    btn.classList.add("md-btn--loading");
+    btn.dataset.loading = "true";
+    btn.textContent = "Updating…";
     state.savedtext[index] = state.defaultValue[index];
     this._updateCardChangedState(index, false, state.variableType[index]);
 
@@ -758,10 +855,10 @@ class SupervisorDashboard extends HTMLElement {
       id: state.gvid[index],
       name: state.gvname[index],
       description: state.description[index],
-      sensitive: false,
+      sensitive: state.sensitive[index] === true,
     };
 
-    fetch(`${WXCC_API_BASE}/organization/${org}/cad-variable/${state.gvid[index]}`, {
+    fetch(`${base}/organization/${org}/cad-variable/${state.gvid[index]}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -771,28 +868,36 @@ class SupervisorDashboard extends HTMLElement {
       redirect: "follow",
     })
       .then((r) => this._safeJson(r, "Update"))
-      .then((result) => this._showUpdateResult(result))
+      .then((result) => this._showUpdateResult(result, btn))
       .catch((err) => {
         console.error("[SupervisorDashboard] Update failed:", err);
-        this._showUpdateResult({ error: { message: [{ description: err.message }] } });
+        this._showUpdateResult({ error: { message: [{ description: err.message }] } }, btn);
       });
   }
 
-  _showUpdateResult(result) {
+  _showUpdateResult(result, btn) {
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove("md-btn--loading");
+      delete btn.dataset.loading;
+      btn.textContent = "Apply";
+    }
     const el = this.shadowRoot.getElementById("submitted");
+    el.classList.remove("msg-feedback--error", "msg-feedback--success");
     if (result?.error) {
       el.textContent = "Error: " + (result.error.message?.[0]?.description ?? "Unknown error");
-      el.style.color = MD.error;
+      el.classList.add("msg-feedback--error");
     } else {
       el.textContent = `Successfully updated ${result.description} to ${result.defaultValue}`;
-      el.style.color = MD.success;
+      el.classList.add("msg-feedback--success");
       if (SUCCESS_MSG_DURATION_MS > 0) {
-        setTimeout(() => { el.textContent = ""; }, SUCCESS_MSG_DURATION_MS);
+        setTimeout(() => { el.textContent = ""; el.classList.remove("msg-feedback--success"); }, SUCCESS_MSG_DURATION_MS);
       }
     }
   }
 
-  _onKeyup(e, state) {
+  _onKeyup(e) {
+    const state = this._state;
     const ta = e.target.closest("textarea");
     if (ta) {
       const index = this._getIndexFromTarget(ta, state);
@@ -824,7 +929,8 @@ class SupervisorDashboard extends HTMLElement {
     }
   }
 
-  _onPaste(e, state) {
+  _onPaste(e) {
+    const state = this._state;
     const ta = e.target.closest("textarea");
     if (!ta) return;
     const index = this._getIndexFromTarget(ta, state);
