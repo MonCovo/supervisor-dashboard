@@ -35,9 +35,35 @@ style.textContent = `
 *, *::before, *::after { box-sizing: border-box; }
 
 :host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 14px;
   color: ${MD.gray70};
+}
+
+/* Scrollable content area - fills panel and scrolls when cards overflow */
+#content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+#content::-webkit-scrollbar {
+  width: 8px;
+}
+#content::-webkit-scrollbar-track {
+  background: ${MD.gray12};
+  border-radius: 4px;
+}
+#content::-webkit-scrollbar-thumb {
+  background: ${MD.gray16};
+  border-radius: 4px;
+}
+#content::-webkit-scrollbar-thumb:hover {
+  background: ${MD.gray50};
 }
 
 .loading, .error { padding: 24px; text-align: center; }
@@ -214,7 +240,7 @@ template.innerHTML = `
 
 class SupervisorDashboard extends HTMLElement {
   static get observedAttributes() {
-    return ["access-token", "org-id", "user-id", "user"];
+    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase"];
   }
 
   constructor() {
@@ -227,34 +253,83 @@ class SupervisorDashboard extends HTMLElement {
     };
   }
 
-  _getAttr(name, prop) {
-    return this[prop] ?? this.getAttribute(name) ?? "";
+  _getAttr(...keys) {
+    for (const k of keys) {
+      const v = this[k] ?? this.getAttribute(k) ?? this.getAttribute(k.replace(/([A-Z])/g, "-$1").toLowerCase()) ?? "";
+      if (v) return v;
+    }
+    return "";
   }
 
-  connectedCallback() {
+  async connectedCallback() {
     this.shadowRoot.appendChild(style.cloneNode(true));
     this.shadowRoot.appendChild(template.content.cloneNode(true));
 
-    const token = this._getAttr("access-token", "accessToken");
-    const org = this._getAttr("org-id", "orgId");
-    const username = this._getAttr("user-id", "userId") || this._getAttr("user", "User") || null;
+    // Support both kebab-case and camelCase (WxCC layout may use either)
+    const token = this._getAttr("accessToken", "access-token");
+    const org = this._getAttr("orgId", "org-id");
+    const username = this._getAttr("userId", "user-id", "User", "user");
+    const triggerURL = this._getAttr("triggerURL", "trigger-url");
+    const passPhrase = this._getAttr("passPhrase", "pass-phrase");
 
-    if (!token) {
-      this._showError("Missing access-token. Set accessToken: $STORE.auth.accessToken in the Desktop layout properties.");
+    let resolvedToken = token;
+    if (!resolvedToken && triggerURL && passPhrase) {
+      this._showLoading();
+      try {
+        resolvedToken = await this._fetchTokenFromService(triggerURL, passPhrase);
+      } catch (err) {
+        console.error("[SupervisorDashboard] Token service error:", err);
+        this._showError("Failed to get token from service. " + (err.message || ""));
+        return;
+      }
+    }
+
+    if (!resolvedToken) {
+      this._showError("Missing access token. In layout properties use either: \"accessToken\": \"$STORE.auth.accessToken\" or \"triggerURL\" + \"passPhrase\" for token service.");
       return;
     }
     if (!org) {
-      this._showError("Missing org-id. Set orgId: $STORE.agent.orgId in the Desktop layout properties.");
+      this._showError("Missing org ID. Set \"orgId\": \"$STORE.agent.orgId\" in the Desktop layout properties.");
       return;
     }
 
     this._showLoading();
-    this._fetchGlobalVariables(org, username, token)
+    this._fetchGlobalVariables(org, username, resolvedToken)
       .then((result) => this._render(result))
       .catch((err) => {
         console.error("[SupervisorDashboard] ERROR:", err);
         this._showError(err.message || "Failed to load");
       });
+  }
+
+  async _fetchTokenFromService(url, passPhrase) {
+    const sep = url.includes("?") ? "&" : "?";
+    const res = await fetch(`${url}${sep}passPhrase=${encodeURIComponent(passPhrase)}`, { redirect: "follow" });
+    const data = await res.json().catch(() => ({}));
+    const t = data?.token ?? data?.accessToken ?? data?.access_token;
+    if (!t) throw new Error("Token service did not return a token");
+    return t;
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (this._state.token != null) return;
+    const token = this._getAttr("accessToken", "access-token");
+    const org = this._getAttr("orgId", "org-id");
+    if (token && org && this.shadowRoot?.getElementById("error")?.style.display === "block") {
+      this._retryInit();
+    }
+  }
+
+  _retryInit() {
+    const token = this._getAttr("accessToken", "access-token");
+    const org = this._getAttr("orgId", "org-id");
+    const username = this._getAttr("userId", "user-id", "User", "user");
+    if (token && org) {
+      this._showLoading();
+      this._fetchGlobalVariables(org, username, token)
+        .then((r) => this._render(r))
+        .catch((err) => this._showError(err.message || "Failed to load"));
+    }
   }
 
   _showLoading() {
