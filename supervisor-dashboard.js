@@ -373,8 +373,10 @@ class SupervisorDashboard extends HTMLElement {
   }
 
   async _fetchGlobalVariables(org, username, token) {
-    const search = username ? `?search=${encodeURIComponent(username)}` : "";
-    const url = `${WXCC_API_BASE}/organization/${org}/v2/cad-variable${search}`;
+    const params = new URLSearchParams();
+    if (username) params.set("search", username);
+    params.set("limit", "500"); // request enough to get all variables in one go
+    const url = `${WXCC_API_BASE}/organization/${org}/v2/cad-variable?${params}`;
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -390,8 +392,8 @@ class SupervisorDashboard extends HTMLElement {
 
   _render({ token, result }) {
     const context = this.shadowRoot;
-    const data = result.data;
-    const total = result.meta?.totalRecords ?? 0;
+    const list = Array.isArray(result.data) ? result.data : [];
+    const total = list.length;
 
     const booleandata = [];
     const stringdata = [];
@@ -402,7 +404,7 @@ class SupervisorDashboard extends HTMLElement {
     };
 
     for (let i = 0; i < total; i++) {
-      const v = data[i];
+      const v = list[i];
       state.agentEditable[i] = v.agentEditable;
       state.variableType[i] = v.variableType;
       state.agentViewable[i] = v.agentViewable;
