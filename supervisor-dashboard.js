@@ -15,7 +15,10 @@ const API_REGION_HOSTS = {
   na1: "https://api.wxcc-na1.cisco.com",
 };
 
-// Momentum Design tokens (Cisco Webex design system)
+// Display order for variable type sections and filter buttons
+const TYPE_ORDER = ["Boolean", "String", "Integer", "Float", "Decimal", "Date", "DateTime", "Other"];
+
+// Momentum Design tokens (Cisco Webex design system) + dark mode
 const MD = {
   primary: "#00A0D1",
   primaryHover: "#007AA3",
@@ -27,6 +30,15 @@ const MD = {
   error: "#D72E15",
   success: "#10893E",
   successBg: "rgba(16,137,62,0.12)",
+  /* Dark mode */
+  darkBg: "#1a1a1a",
+  darkCard: "#2d2d2d",
+  darkBorder: "rgba(255,255,255,0.12)",
+  darkText: "rgba(255,255,255,0.9)",
+  darkMuted: "rgba(255,255,255,0.55)",
+  darkInputBg: "#383838",
+  darkSuccessBg: "rgba(16,137,62,0.2)",
+  darkErrorBg: "rgba(215,46,21,0.15)",
 };
 
 // Inline SVG icons
@@ -299,6 +311,22 @@ input.md-input.other-value { min-height: 0; resize: none; }
   border-color: ${MD.primary};
 }
 
+.type-filter { margin-bottom: 16px; }
+.type-filter__buttons {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.type-filter__btn {
+  padding: 6px 14px; font-size: 13px; font-weight: 500;
+  border: 1px solid ${MD.gray16}; border-radius: 6px;
+  background: ${MD.white}; color: ${MD.gray70};
+  cursor: pointer; transition: background 150ms, border-color 150ms;
+}
+.type-filter__btn:hover { background: ${MD.gray12}; border-color: ${MD.gray16}; }
+.type-filter__btn--active {
+  background: ${MD.primary}; color: ${MD.white}; border-color: ${MD.primary};
+}
+.type-filter__btn--active:hover { background: ${MD.primaryHover}; border-color: ${MD.primaryHover}; }
+
 /* Section titles */
 .section-title {
   font-size: 12px; font-weight: 600; text-transform: uppercase;
@@ -316,6 +344,127 @@ input.md-input.other-value { min-height: 0; resize: none; }
   border-radius: 50%; animation: spin 0.8s linear infinite;
   margin-right: 8px; vertical-align: middle;
 }
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :host {
+    color: ${MD.darkText};
+    background: ${MD.darkBg};
+  }
+  #content { background: ${MD.darkBg}; }
+  #content::-webkit-scrollbar-track { background: ${MD.darkBorder}; }
+  #content::-webkit-scrollbar-thumb { background: ${MD.darkMuted}; }
+  #content::-webkit-scrollbar-thumb:hover { background: ${MD.darkText}; }
+
+  .loading, .error {
+    color: ${MD.darkText};
+    background: ${MD.darkBg};
+  }
+  .loading::before { border-color: ${MD.primary}; border-top-color: transparent; }
+
+  .var-card {
+    background: ${MD.darkCard};
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border-color: transparent;
+  }
+  .var-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .var-card:focus-within { box-shadow: 0 0 0 2px ${MD.primary}; }
+  .var-card--changed {
+    border-color: ${MD.primary};
+    box-shadow: 0 2px 8px rgba(0,160,209,0.35);
+  }
+
+  .var-card__icon {
+    background: rgba(255,255,255,0.12);
+    color: ${MD.primary};
+  }
+  .var-card__title { color: ${MD.darkText}; }
+  .var-card__subtitle { color: ${MD.darkMuted}; }
+  .var-card__type-badge {
+    color: ${MD.darkMuted};
+    background: rgba(255,255,255,0.12);
+  }
+
+  .status-badge--on {
+    background: ${MD.darkSuccessBg};
+    color: #5dd879;
+  }
+  .status-badge--off {
+    background: rgba(255,255,255,0.12);
+    color: ${MD.darkMuted};
+  }
+
+  .md-toggle__track { background: rgba(255,255,255,0.2); }
+  .md-toggle__track::after { background: ${MD.white}; }
+  .md-toggle__input:checked + .md-toggle__track { background: ${MD.primary}; }
+  .md-toggle__input:focus + .md-toggle__track { box-shadow: 0 0 0 2px ${MD.primary}; }
+
+  .md-btn--secondary {
+    background: rgba(255,255,255,0.12);
+    color: ${MD.darkText};
+  }
+  .md-btn--secondary:hover:not(:disabled) { background: rgba(255,255,255,0.18); }
+
+  .md-input {
+    background: ${MD.darkInputBg};
+    border-color: ${MD.darkBorder};
+    color: ${MD.darkText};
+  }
+  .md-input::placeholder { color: ${MD.darkMuted}; }
+  .md-input:focus { border-color: ${MD.primary}; }
+  .char-count { color: ${MD.darkMuted}; }
+
+  .msg-feedback--error {
+    background: ${MD.darkErrorBg};
+    border-color: rgba(215,46,21,0.4);
+    color: #f28b82;
+  }
+  .msg-feedback--success {
+    background: ${MD.darkSuccessBg};
+    border-color: rgba(16,137,62,0.4);
+    color: #81c995;
+  }
+
+  .dashboard-header { border-bottom-color: ${MD.darkBorder}; }
+  .dashboard-header__title { color: ${MD.darkText}; }
+  .dashboard-header__meta { color: ${MD.darkMuted}; }
+
+  .empty-state {
+    background: ${MD.darkCard};
+    border-color: ${MD.darkBorder};
+    color: ${MD.darkMuted};
+  }
+
+  .filter-bar { border-bottom-color: ${MD.darkBorder}; }
+  .filter-bar__label { color: ${MD.darkMuted}; }
+  .filter-bar__input {
+    background: ${MD.darkInputBg};
+    border-color: ${MD.darkBorder};
+    color: ${MD.darkText};
+  }
+  .filter-bar__input::placeholder { color: ${MD.darkMuted}; }
+
+  .type-filter__btn {
+    background: ${MD.darkCard};
+    border-color: ${MD.darkBorder};
+    color: ${MD.darkText};
+  }
+  .type-filter__btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: ${MD.darkBorder};
+  }
+  .type-filter__btn--active {
+    background: ${MD.primary};
+    color: ${MD.white};
+    border-color: ${MD.primary};
+  }
+  .type-filter__btn--active:hover {
+    background: ${MD.primaryHover};
+    border-color: ${MD.primaryHover};
+  }
+
+  .section-title { color: ${MD.darkMuted}; }
+}
 `;
 
 const template = document.createElement("template");
@@ -331,18 +480,10 @@ template.innerHTML = `
       <label class="filter-bar__label" for="variable-search">Search variables</label>
       <input type="text" id="variable-search" class="filter-bar__input" placeholder="Type variable name to filter..." autocomplete="off" aria-describedby="variable-count" />
     </div>
-    <div id="boolean-section" class="section-block">
-      <div class="section-title">Toggle Controls</div>
-      <div id="boolean-cards" class="dashboard"></div>
+    <div class="type-filter" id="type-filter" role="group" aria-label="Filter by variable type">
+      <div class="type-filter__buttons" id="type-filter-buttons"></div>
     </div>
-    <div id="string-section" class="section-block">
-      <div class="section-title">Messages</div>
-      <div id="string-cards" class="dashboard"></div>
-    </div>
-    <div id="other-section" class="section-block">
-      <div class="section-title">Other (Number, Date, etc.)</div>
-      <div id="other-cards" class="dashboard"></div>
-    </div>
+    <div id="sections-container"></div>
     <div class="msg-feedback" id="submitted" role="status" aria-live="polite" aria-atomic="true"></div>
   </div>
 `;
@@ -519,13 +660,14 @@ class SupervisorDashboard extends HTMLElement {
     const list = Array.isArray(result.data) ? result.data : [];
     const total = list.length;
 
-    const booleandata = [];
-    const stringdata = [];
-    const otherdata = [];
+    const typeGroups = {};
+    TYPE_ORDER.forEach((t) => { typeGroups[t] = []; });
+
     const state = {
       agentEditable: [], variableType: [], agentViewable: [], reportable: [],
       active: [], defaultValue: [], gvid: [], gvname: [], description: [], savedtext: [], sensitive: [],
       checkboxname: [], submitname: [], textareaname: [], remainingname: [], otherinputname: [],
+      typeFilter: this._state.typeFilter || "all",
     };
 
     for (let i = 0; i < total; i++) {
@@ -547,8 +689,12 @@ class SupervisorDashboard extends HTMLElement {
       state.remainingname[i] = `remaining${i}`;
       state.otherinputname[i] = `otherinput${i}`;
 
-      if (v.variableType === "Boolean" && v.active) {
-        booleandata.push({
+      if (!v.active) continue;
+
+      const typeKey = TYPE_ORDER.includes(v.variableType) ? v.variableType : "Other";
+
+      if (v.variableType === "Boolean") {
+        typeGroups.Boolean.push({
           index: i,
           variableName: state.gvname[i],
           description: state.description[i],
@@ -556,7 +702,7 @@ class SupervisorDashboard extends HTMLElement {
           checkName: state.checkboxname[i],
           submitName: state.submitname[i],
         });
-      } else if (v.variableType === "String" && v.active) {
+      } else if (v.variableType === "String") {
         const raw = v.defaultValue == null ? "" : String(v.defaultValue);
         if (raw.length > MAX_STRING_LENGTH) {
           console.warn(`[SupervisorDashboard] Variable "${v.name}" value truncated from ${raw.length} to ${MAX_STRING_LENGTH} characters.`);
@@ -564,7 +710,7 @@ class SupervisorDashboard extends HTMLElement {
         const truncated = this._truncateToMax(v.defaultValue, MAX_STRING_LENGTH);
         state.defaultValue[i] = truncated;
         state.savedtext[i] = truncated;
-        stringdata.push({
+        typeGroups.String.push({
           index: i,
           variableName: state.gvname[i],
           description: state.description[i],
@@ -573,11 +719,11 @@ class SupervisorDashboard extends HTMLElement {
           submitName: state.submitname[i],
           remainingName: state.remainingname[i],
         });
-      } else if (v.active) {
+      } else {
         const { value: normalized } = this._getOtherInputTypeAndValue(v.variableType, v.defaultValue);
         state.defaultValue[i] = normalized;
         state.savedtext[i] = normalized;
-        otherdata.push({
+        typeGroups[typeKey].push({
           index: i,
           variableName: state.gvname[i],
           description: state.description[i],
@@ -589,9 +735,34 @@ class SupervisorDashboard extends HTMLElement {
       }
     }
 
-    context.getElementById("boolean-cards").innerHTML = this._generateBooleanCards(booleandata);
-    context.getElementById("string-cards").innerHTML = this._generateStringCards(stringdata);
-    context.getElementById("other-cards").innerHTML = this._generateOtherCards(otherdata);
+    const typesWithData = TYPE_ORDER.filter((t) => typeGroups[t].length > 0);
+    const activeFilter = state.typeFilter === "all" || typesWithData.includes(state.typeFilter) ? state.typeFilter : "all";
+
+    const filterButtonsHtml = [
+      `<button type="button" class="type-filter__btn ${activeFilter === "all" ? "type-filter__btn--active" : ""}" data-type-filter="all" aria-pressed="${activeFilter === "all"}">All</button>`,
+      ...typesWithData.map(
+        (t) => `<button type="button" class="type-filter__btn ${activeFilter === t ? "type-filter__btn--active" : ""}" data-type-filter="${this._escape(t)}" aria-pressed="${activeFilter === t}">${this._escape(t)}</button>`
+      ),
+    ].join("");
+    context.getElementById("type-filter-buttons").innerHTML = filterButtonsHtml;
+
+    const container = context.getElementById("sections-container");
+    container.innerHTML = "";
+    typesWithData.forEach((type) => {
+      const section = document.createElement("div");
+      section.className = "section-block";
+      section.dataset.type = type;
+      section.id = `section-${type}`;
+      let cardsHtml;
+      if (type === "Boolean") cardsHtml = this._generateBooleanCards(typeGroups.Boolean);
+      else if (type === "String") cardsHtml = this._generateStringCards(typeGroups.String);
+      else cardsHtml = this._generateOtherCards(typeGroups[type]);
+      section.innerHTML = `
+        <div class="section-title">${this._escape(type)}</div>
+        <div class="dashboard section-cards">${cardsHtml}</div>
+      `;
+      container.appendChild(section);
+    });
 
     for (let i = 0; i < total; i++) {
       if (state.variableType[i] === "String") {
@@ -601,13 +772,14 @@ class SupervisorDashboard extends HTMLElement {
       }
     }
 
-    this._state = { ...this._state, ...state, token };
+    this._state = { ...this._state, ...state, token, typeFilter: activeFilter };
 
     const countEl = context.getElementById("variable-count");
     if (countEl) countEl.textContent = `${total} variable${total !== 1 ? "s" : ""}`;
 
     this._showContent();
     this._attachSearchFilter();
+    this._attachTypeFilter();
     this._onSearchInput();
   }
 
@@ -619,42 +791,58 @@ class SupervisorDashboard extends HTMLElement {
     input.addEventListener("input", () => this._onSearchInput());
   }
 
+  _attachTypeFilter() {
+    if (this._typeFilterAttached) return;
+    const container = this.shadowRoot.getElementById("type-filter-buttons");
+    if (!container) return;
+    this._typeFilterAttached = true;
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest(".type-filter__btn");
+      if (!btn) return;
+      const filter = btn.dataset.typeFilter;
+      if (!filter) return;
+      this._state.typeFilter = filter;
+      this._setTypeFilterActive(filter);
+      this._onSearchInput();
+    });
+  }
+
+  _setTypeFilterActive(activeFilter) {
+    const buttons = this.shadowRoot.querySelectorAll(".type-filter__btn");
+    buttons.forEach((btn) => {
+      const isActive = btn.dataset.typeFilter === activeFilter;
+      btn.classList.toggle("type-filter__btn--active", isActive);
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  }
+
   _onSearchInput() {
     const input = this.shadowRoot.getElementById("variable-search");
     const search = (input?.value ?? "").trim().toLowerCase();
-    const boolCards = this.shadowRoot.querySelectorAll("#boolean-cards .var-card");
-    const strCards = this.shadowRoot.querySelectorAll("#string-cards .var-card");
-    const otherCards = this.shadowRoot.querySelectorAll("#other-cards .var-card");
-    let anyBoolVisible = false;
-    let anyStrVisible = false;
-    let anyOtherVisible = false;
+    const typeFilter = this._state?.typeFilter || "all";
+    const container = this.shadowRoot.getElementById("sections-container");
+    if (!container) return;
+
     const filterCard = (card) => {
       const title = card.querySelector(".var-card__title")?.textContent ?? "";
       const subtitle = card.querySelector(".var-card__subtitle")?.textContent ?? "";
       const searchable = (title + " " + subtitle).toLowerCase();
       return !search || searchable.includes(search);
     };
-    boolCards.forEach((card) => {
-      const show = filterCard(card);
-      card.style.display = show ? "" : "none";
-      if (show) anyBoolVisible = true;
+
+    container.querySelectorAll(".section-block").forEach((section) => {
+      const sectionType = section.dataset.type;
+      const typeMatches = typeFilter === "all" || sectionType === typeFilter;
+      const cards = section.querySelectorAll(".var-card");
+      let anyVisible = false;
+      cards.forEach((card) => {
+        const show = typeMatches && filterCard(card);
+        card.style.display = show ? "" : "none";
+        if (show) anyVisible = true;
+      });
+      const showSection = typeMatches && (!search || anyVisible);
+      section.style.display = showSection ? "" : "none";
     });
-    strCards.forEach((card) => {
-      const show = filterCard(card);
-      card.style.display = show ? "" : "none";
-      if (show) anyStrVisible = true;
-    });
-    otherCards.forEach((card) => {
-      const show = filterCard(card);
-      card.style.display = show ? "" : "none";
-      if (show) anyOtherVisible = true;
-    });
-    const boolSection = this.shadowRoot.getElementById("boolean-section");
-    const strSection = this.shadowRoot.getElementById("string-section");
-    const otherSection = this.shadowRoot.getElementById("other-section");
-    if (boolSection) boolSection.style.display = anyBoolVisible || !search ? "" : "none";
-    if (strSection) strSection.style.display = anyStrVisible || !search ? "" : "none";
-    if (otherSection) otherSection.style.display = anyOtherVisible || !search ? "" : "none";
   }
 
   _generateBooleanCards(data) {
@@ -668,12 +856,13 @@ class SupervisorDashboard extends HTMLElement {
       const showDesc = item.description && item.description !== item.variableName;
       const nameEsc = this._escape(item.variableName);
       return `
-        <div class="var-card" id="card-bool-${item.index}" data-index="${item.index}">
+        <div class="var-card" id="card-bool-${item.index}" data-index="${item.index}" data-variable-type="Boolean">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.toggle}</div>
             <div>
               <h3 class="var-card__title">${nameEsc}</h3>
               ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
+              <span class="var-card__type-badge">Boolean</span>
               <span class="status-badge ${badgeClass}">${badgeText}</span>
             </div>
           </div>
@@ -700,12 +889,13 @@ class SupervisorDashboard extends HTMLElement {
       const showDesc = item.description && item.description !== item.variableName;
       const nameEsc = this._escape(item.variableName);
       return `
-        <div class="var-card" id="card-str-${item.index}" data-index="${item.index}">
+        <div class="var-card" id="card-str-${item.index}" data-index="${item.index}" data-variable-type="String">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.message}</div>
             <div>
               <h3 class="var-card__title">${nameEsc}</h3>
               ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
+              <span class="var-card__type-badge">String</span>
             </div>
           </div>
           <div class="var-card__body">
@@ -729,6 +919,7 @@ class SupervisorDashboard extends HTMLElement {
       case "Decimal":
         return { type: "number", step: "any", value: str };
       case "Date":
+      case "DateTime":
         const dateVal = str ? (str.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || "") : "";
         return { type: "date", step: "", value: dateVal };
       default:
@@ -748,7 +939,7 @@ class SupervisorDashboard extends HTMLElement {
       const valueEsc = this._escape(inputValue);
       const stepAttr = step ? ` step="${this._escape(step)}"` : "";
       return `
-        <div class="var-card" id="card-other-${item.index}" data-index="${item.index}">
+        <div class="var-card" id="card-other-${item.index}" data-index="${item.index}" data-variable-type="${this._escape(item.variableType || "Other")}">
           <div class="var-card__header">
             <div class="var-card__icon">${ICONS.other}</div>
             <div>
