@@ -1,7 +1,7 @@
 /**
  * Supervisor Dashboard Widget
  * Card-based dashboard for WxCC Global Variables with visual status indicators.
- * Allows supervisors to view and edit Boolean and String variables.
+ * Supports Boolean (toggles), String (textareas), and other types (Integer, Float, Date, etc.) with single-line edit and Apply.
  */
 
 // Configurable - change for different regions (eu1, eu2, na1, etc.)
@@ -27,6 +27,7 @@ const MD = {
 const ICONS = {
   toggle: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="8" cy="12" r="3"/></svg>',
   message: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  other: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>',
 };
 
 const style = document.createElement("style");
@@ -125,6 +126,16 @@ style.textContent = `
   color: ${MD.gray50};
   margin: 2px 0 0 0;
   line-height: 1.4;
+}
+.var-card__type-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  color: ${MD.gray50};
+  background: ${MD.gray12};
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
 }
 
 /* Status badge */
@@ -281,6 +292,10 @@ template.innerHTML = `
     <div id="string-section" style="margin-top: 24px;">
       <div class="section-title">Messages</div>
       <div id="string-cards" class="dashboard"></div>
+    </div>
+    <div id="other-section" style="margin-top: 24px;">
+      <div class="section-title">Other (Number, Date, etc.)</div>
+      <div id="other-cards" class="dashboard"></div>
     </div>
     <div class="msg-feedback" id="submitted"></div>
   </div>
@@ -442,10 +457,11 @@ class SupervisorDashboard extends HTMLElement {
 
     const booleandata = [];
     const stringdata = [];
+    const otherdata = [];
     const state = {
       agentEditable: [], variableType: [], agentViewable: [], reportable: [],
       active: [], defaultValue: [], gvid: [], gvname: [], description: [], savedtext: [],
-      checkboxname: [], submitname: [], textareaname: [], remainingname: [],
+      checkboxname: [], submitname: [], textareaname: [], remainingname: [], otherinputname: [],
     };
 
     for (let i = 0; i < total; i++) {
@@ -464,6 +480,7 @@ class SupervisorDashboard extends HTMLElement {
       state.submitname[i] = `submit${i}`;
       state.textareaname[i] = `textarea${i}`;
       state.remainingname[i] = `remaining${i}`;
+      state.otherinputname[i] = `otherinput${i}`;
 
       if (v.variableType === "Boolean" && v.active) {
         booleandata.push({
@@ -474,8 +491,7 @@ class SupervisorDashboard extends HTMLElement {
           checkName: state.checkboxname[i],
           submitName: state.submitname[i],
         });
-      }
-      if (v.variableType === "String" && v.active) {
+      } else if (v.variableType === "String" && v.active) {
         const truncated = this._truncateToMax(v.defaultValue, MAX_STRING_LENGTH);
         state.defaultValue[i] = truncated;
         state.savedtext[i] = truncated;
@@ -488,11 +504,24 @@ class SupervisorDashboard extends HTMLElement {
           submitName: state.submitname[i],
           remainingName: state.remainingname[i],
         });
+      } else if (v.active) {
+        state.defaultValue[i] = v.defaultValue == null ? "" : String(v.defaultValue);
+        state.savedtext[i] = state.defaultValue[i];
+        otherdata.push({
+          index: i,
+          variableName: state.gvname[i],
+          description: state.description[i],
+          variableType: v.variableType,
+          value: state.defaultValue[i],
+          inputName: state.otherinputname[i],
+          submitName: state.submitname[i],
+        });
       }
     }
 
     context.getElementById("boolean-cards").innerHTML = this._generateBooleanCards(booleandata);
     context.getElementById("string-cards").innerHTML = this._generateStringCards(stringdata);
+    context.getElementById("other-cards").innerHTML = this._generateOtherCards(otherdata);
 
     for (let i = 0; i < total; i++) {
       if (state.variableType[i] === "String") {
@@ -525,28 +554,37 @@ class SupervisorDashboard extends HTMLElement {
     const search = (input?.value ?? "").trim().toLowerCase();
     const boolCards = this.shadowRoot.querySelectorAll("#boolean-cards .var-card");
     const strCards = this.shadowRoot.querySelectorAll("#string-cards .var-card");
+    const otherCards = this.shadowRoot.querySelectorAll("#other-cards .var-card");
     let anyBoolVisible = false;
     let anyStrVisible = false;
-    boolCards.forEach((card) => {
+    let anyOtherVisible = false;
+    const filterCard = (card) => {
       const title = card.querySelector(".var-card__title")?.textContent ?? "";
       const subtitle = card.querySelector(".var-card__subtitle")?.textContent ?? "";
       const searchable = (title + " " + subtitle).toLowerCase();
-      const show = !search || searchable.includes(search);
+      return !search || searchable.includes(search);
+    };
+    boolCards.forEach((card) => {
+      const show = filterCard(card);
       card.style.display = show ? "" : "none";
       if (show) anyBoolVisible = true;
     });
     strCards.forEach((card) => {
-      const title = card.querySelector(".var-card__title")?.textContent ?? "";
-      const subtitle = card.querySelector(".var-card__subtitle")?.textContent ?? "";
-      const searchable = (title + " " + subtitle).toLowerCase();
-      const show = !search || searchable.includes(search);
+      const show = filterCard(card);
       card.style.display = show ? "" : "none";
       if (show) anyStrVisible = true;
     });
+    otherCards.forEach((card) => {
+      const show = filterCard(card);
+      card.style.display = show ? "" : "none";
+      if (show) anyOtherVisible = true;
+    });
     const boolSection = this.shadowRoot.getElementById("boolean-section");
     const strSection = this.shadowRoot.getElementById("string-section");
+    const otherSection = this.shadowRoot.getElementById("other-section");
     if (boolSection) boolSection.style.display = anyBoolVisible || !search ? "" : "none";
     if (strSection) strSection.style.display = anyStrVisible || !search ? "" : "none";
+    if (otherSection) otherSection.style.display = anyOtherVisible || !search ? "" : "none";
   }
 
   _generateBooleanCards(data) {
@@ -610,6 +648,34 @@ class SupervisorDashboard extends HTMLElement {
     }).join("");
   }
 
+  _generateOtherCards(data) {
+    if (!data.length) {
+      return `<div class="var-card"><p style="margin:0;color:${MD.gray50}">No other variables</p></div>`;
+    }
+    return data.map((item) => {
+      const showDesc = item.description && item.description !== item.variableName;
+      const typeLabel = item.variableType || "Other";
+      return `
+        <div class="var-card" id="card-other-${item.index}" data-index="${item.index}">
+          <div class="var-card__header">
+            <div class="var-card__icon">${ICONS.other}</div>
+            <div>
+              <h3 class="var-card__title">${this._escape(item.variableName)}</h3>
+              ${showDesc ? `<p class="var-card__subtitle">${this._escape(item.description)}</p>` : ""}
+              <span class="var-card__type-badge">${this._escape(typeLabel)}</span>
+            </div>
+          </div>
+          <div class="var-card__body">
+            <input type="text" class="md-input other-value" id="${item.inputName}" data-index="${item.index}" value="${this._escape(item.value)}" />
+            <div class="var-card__controls" style="margin-top:12px">
+              <button type="button" class="md-btn md-btn--secondary" data-index="${item.index}" id="${item.submitName}" disabled>Apply</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
   _truncateToMax(str, max) {
     if (str == null) return "";
     const s = String(str);
@@ -630,7 +696,7 @@ class SupervisorDashboard extends HTMLElement {
   }
 
   _updateCardChangedState(index, hasChanges, variableType) {
-    const prefix = variableType === "Boolean" ? "bool" : "str";
+    const prefix = variableType === "Boolean" ? "bool" : variableType === "String" ? "str" : "other";
     const card = this.shadowRoot.getElementById(`card-${prefix}-${index}`);
     if (card) card.classList.toggle("var-card--changed", hasChanges);
   }
@@ -728,21 +794,34 @@ class SupervisorDashboard extends HTMLElement {
 
   _onKeyup(e, state) {
     const ta = e.target.closest("textarea");
-    if (!ta) return;
-    const index = this._getIndexFromTarget(ta, state);
-    if (index < 0) return;
-
-    const span = this.shadowRoot.getElementById(state.remainingname[index]);
-    this._updateCharCount(span, ta.value.length);
-
-    state.defaultValue[index] = ta.value;
-    const submitBtn = this.shadowRoot.getElementById(state.submitname[index]);
-    const hasChanges = ta.value !== state.savedtext[index];
-    if (submitBtn) {
-      submitBtn.disabled = !hasChanges;
-      submitBtn.className = "md-btn " + (hasChanges ? "md-btn--has-changes" : "md-btn--secondary");
+    if (ta) {
+      const index = this._getIndexFromTarget(ta, state);
+      if (index < 0) return;
+      const span = this.shadowRoot.getElementById(state.remainingname[index]);
+      this._updateCharCount(span, ta.value.length);
+      state.defaultValue[index] = ta.value;
+      const submitBtn = this.shadowRoot.getElementById(state.submitname[index]);
+      const hasChanges = ta.value !== state.savedtext[index];
+      if (submitBtn) {
+        submitBtn.disabled = !hasChanges;
+        submitBtn.className = "md-btn " + (hasChanges ? "md-btn--has-changes" : "md-btn--secondary");
+      }
+      this._updateCardChangedState(index, hasChanges, "String");
+      return;
     }
-    this._updateCardChangedState(index, hasChanges, "String");
+    const otherInput = e.target.closest("input.other-value");
+    if (otherInput) {
+      const index = this._getIndexFromTarget(otherInput, state);
+      if (index < 0) return;
+      state.defaultValue[index] = otherInput.value;
+      const submitBtn = this.shadowRoot.getElementById(state.submitname[index]);
+      const hasChanges = otherInput.value !== state.savedtext[index];
+      if (submitBtn) {
+        submitBtn.disabled = !hasChanges;
+        submitBtn.className = "md-btn " + (hasChanges ? "md-btn--has-changes" : "md-btn--secondary");
+      }
+      this._updateCardChangedState(index, hasChanges, state.variableType[index]);
+    }
   }
 
   _onPaste(e, state) {
