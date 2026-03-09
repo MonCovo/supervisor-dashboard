@@ -36,7 +36,9 @@ style.textContent = `
 
 :host {
   display: block;
+  position: relative;
   height: 100%;
+  max-height: 100vh; /* fallback when parent doesn't set height (e.g. Desktop panel) */
   min-height: 0;
   overflow: hidden;
   font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -44,9 +46,10 @@ style.textContent = `
   color: ${MD.gray70};
 }
 
-/* Scrollable content area - fills panel and scrolls when cards overflow */
+/* Scrollable content area - fills host and scrolls when cards overflow */
 #content {
-  height: 100%;
+  position: absolute;
+  inset: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
