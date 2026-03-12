@@ -69,12 +69,27 @@ Add the widget to your Desktop layout. The framework may pass properties as **ca
 }
 ```
 
-| Attribute       | Description                                      |
-|-----------------|--------------------------------------------------|
-| `accessToken`   | `$STORE.auth.accessToken` – bearer token         |
-| `orgId`         | `$STORE.agent.orgId` – WxCC organization ID      |
+| Attribute       | Description                                                                 |
+|-----------------|-----------------------------------------------------------------------------|
+| `accessToken`   | `$STORE.auth.accessToken` – bearer token                                    |
+| `orgId`         | `$STORE.agent.orgId` – WxCC organization ID                                 |
+| `namePrefix`    | Optional. Only show variables whose name **starts with** this string (e.g. `StaffordOOH`). Omit to show all variables. |
 
-The widget loads **all** organisation global variables; use the in-app search box to filter by variable name.
+The widget loads organisation global variables (or only those matching `namePrefix` if set); use the in-app search box to filter further by variable name.
+
+### Stafford OOH–only widget
+
+To show only variables whose names start with `StaffordOOH`, add the widget with `namePrefix`:
+
+```json
+"properties": {
+  "accessToken": "$STORE.auth.accessToken",
+  "orgId": "$STORE.agent.orgId",
+  "namePrefix": "StaffordOOH"
+}
+```
+
+Use a separate nav item and page (e.g. "Stafford OOH Variables") so supervisors can open either the full dashboard or the Stafford OOH–only view.
 
 ## Configuration
 

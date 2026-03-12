@@ -472,7 +472,7 @@ template.innerHTML = `
   <div id="error" class="error" style="display:none"></div>
   <div id="content" style="display:none">
     <div class="dashboard-header">
-      <h2 class="dashboard-header__title">Global Variables</h2>
+      <h2 class="dashboard-header__title" id="dashboard-title">Global Variables</h2>
       <span class="dashboard-header__meta" id="variable-count" aria-live="polite"></span>
     </div>
     <div class="filter-bar">
@@ -489,7 +489,7 @@ template.innerHTML = `
 
 class SupervisorDashboard extends HTMLElement {
   static get observedAttributes() {
-    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase", "api-region", "apiRegion", "dark", "theme", "is-dark-mode", "isDarkMode"];
+    return ["access-token", "accessToken", "org-id", "orgId", "user-id", "userId", "user", "User", "triggerURL", "passPhrase", "api-region", "apiRegion", "dark", "theme", "is-dark-mode", "isDarkMode", "name-prefix", "namePrefix"];
   }
 
   constructor() {
@@ -678,7 +678,11 @@ class SupervisorDashboard extends HTMLElement {
 
   _render({ token, result }) {
     const context = this.shadowRoot;
-    const list = Array.isArray(result.data) ? result.data : [];
+    const rawList = Array.isArray(result.data) ? result.data : [];
+    const namePrefix = String(this._getAttr("namePrefix", "name-prefix") || "").trim();
+    const list = namePrefix
+      ? rawList.filter((v) => v && v.name != null && String(v.name).startsWith(namePrefix))
+      : rawList;
     const total = list.length;
 
     const typeGroups = {};
@@ -769,21 +773,33 @@ class SupervisorDashboard extends HTMLElement {
 
     const container = context.getElementById("sections-container");
     container.innerHTML = "";
-    typesWithData.forEach((type) => {
-      const section = document.createElement("div");
-      section.className = "section-block";
-      section.dataset.type = type;
-      section.id = `section-${type}`;
-      let cardsHtml;
-      if (type === "Boolean") cardsHtml = this._generateBooleanCards(typeGroups.Boolean);
-      else if (type === "String") cardsHtml = this._generateStringCards(typeGroups.String);
-      else cardsHtml = this._generateOtherCards(typeGroups[type]);
-      section.innerHTML = `
-        <div class="section-title">${this._escape(type)}</div>
-        <div class="dashboard section-cards">${cardsHtml}</div>
+    if (typesWithData.length > 0) {
+      typesWithData.forEach((type) => {
+        const section = document.createElement("div");
+        section.className = "section-block";
+        section.dataset.type = type;
+        section.id = `section-${type}`;
+        let cardsHtml;
+        if (type === "Boolean") cardsHtml = this._generateBooleanCards(typeGroups.Boolean);
+        else if (type === "String") cardsHtml = this._generateStringCards(typeGroups.String);
+        else cardsHtml = this._generateOtherCards(typeGroups[type]);
+        section.innerHTML = `
+          <div class="section-title">${this._escape(type)}</div>
+          <div class="dashboard section-cards">${cardsHtml}</div>
+        `;
+        container.appendChild(section);
+      });
+    } else {
+      const emptyMsg = namePrefix
+        ? `No variables found whose name starts with "${this._escape(namePrefix)}".`
+        : "No active global variables in this organisation.";
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">${ICONS.other}</div>
+          <p class="empty-state__text">${emptyMsg}</p>
+        </div>
       `;
-      container.appendChild(section);
-    });
+    }
 
     for (let i = 0; i < total; i++) {
       if (state.variableType[i] === "String") {
@@ -794,6 +810,9 @@ class SupervisorDashboard extends HTMLElement {
     }
 
     this._state = { ...this._state, ...state, token, typeFilter: activeFilter };
+
+    const titleEl = context.getElementById("dashboard-title");
+    if (titleEl) titleEl.textContent = namePrefix ? `${namePrefix} Variables` : "Global Variables";
 
     const countEl = context.getElementById("variable-count");
     if (countEl) countEl.textContent = `${total} variable${total !== 1 ? "s" : ""}`;
